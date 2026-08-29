@@ -2,16 +2,16 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { BackupCommand, PullCommand, PushCommand, RestoreCommand } = require("../src/commands.js");
-const { DefaultConfigFactory } = require("../src/config.js");
-const { DEFAULT_SETTINGS } = require("../src/domain.js");
-const { GitBackupRepository, NodeFileSystem, NodeProcessRunner } = require("../src/node-adapters.js");
+const { BackupCommand, PullCommand, PushCommand, RestoreCommand } = require("../.test-dist/src/commands.js");
+const { DefaultConfigFactory } = require("../.test-dist/src/config.js");
+const { DEFAULT_SETTINGS } = require("../.test-dist/src/domain.js");
+const { GitBackupRepository, NodeFileSystem, NodeProcessRunner } = require("../.test-dist/src/node-adapters.js");
 const {
   DefaultEncryptionStrategyFactory,
   DefaultNamingStrategyFactory,
   DefaultRemoteStrategyFactory,
   TarArchiveStrategyFactory,
-} = require("../src/strategies.js");
+} = require("../.test-dist/src/strategies.js");
 
 async function createContext(root, overrides, chooseRestore = async () => null) {
   const vault = path.join(root, "vault");

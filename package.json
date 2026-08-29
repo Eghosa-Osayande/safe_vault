@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit && node esbuild.config.mjs production",
-    "test": "npm run build && node tests/integration.js"
+    "build:test": "tsc --project tsconfig.test.json",
+    "test": "npm run build && npm run build:test && node tests/integration.js"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

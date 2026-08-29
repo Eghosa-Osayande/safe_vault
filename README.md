@@ -30,13 +30,19 @@ For age backups, configure an age recipient. Restoring also requires the path to
 
 ## Build
 
-From the `plugin` directory:
+From the repository root:
 
 ```sh
 npm run build
 ```
 
-Install the generated JavaScript files together with `manifest.json` in `.obsidian/plugins/vault-archive/`, then reload Obsidian.
+Obsidian needs `manifest.json` and a built `main.js` in the plugin folder before it can load the plugin. For manual installation, copy these files into `.obsidian/plugins/vault-crypt/`:
+
+- `manifest.json`
+- `main.js`
+- `styles.css`
+
+If you are installing from the repository checkout instead of a release asset, run `npm run build` first so `main.js` exists, then reload Obsidian.
 
 ## Architecture
 
