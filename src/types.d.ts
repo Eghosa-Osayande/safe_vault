@@ -32,5 +32,7 @@ declare module "obsidian" {
   }
 }
 declare function require(name: string): any;
-declare const process: { env: Record<string, string | undefined> };
-declare const console: { error(...args: unknown[]): void };
+
+declare const process: {
+  env: Record<string, string | undefined>
+};
