@@ -9,6 +9,7 @@
     "test": "npm run build && node tests/integration.js"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3"
   }
 }
