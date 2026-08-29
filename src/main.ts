@@ -12,15 +12,15 @@ export default class VaultArchivePlugin extends Plugin {
 
   async onload(): Promise<void> {
     this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData() as Partial<BackupSettings> | null ?? {}) };
-    this.register("backup", "Backup vault", new BackupCommand());
-    this.register("push", "Push backup repository", new PushCommand());
-    this.register("pull", "Pull backup repository", new PullCommand());
-    this.register("full-backup", "Full backup (backup and push)", new FullBackupCommand());
-    this.register("restore", "Restore vault backup", new RestoreCommand());
-    this.register("configure-backup", "Configure backup", new ConfigureBackupCommand());
+    this.registerVaultCommand("backup", "Backup vault", new BackupCommand());
+    this.registerVaultCommand("push", "Push backup repository", new PushCommand());
+    this.registerVaultCommand("pull", "Pull backup repository", new PullCommand());
+    this.registerVaultCommand("full-backup", "Full backup (backup and push)", new FullBackupCommand());
+    this.registerVaultCommand("restore", "Restore vault backup", new RestoreCommand());
+    this.registerVaultCommand("configure-backup", "Configure backup", new ConfigureBackupCommand());
   }
 
-  private register(id: string, name: string, command: Command): void {
+  private registerVaultCommand(id: string, name: string, command: Command): void {
     this.addCommand({ id, name, callback: () => this.handleCommand(command) });
   }
 

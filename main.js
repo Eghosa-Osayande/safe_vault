@@ -652,14 +652,14 @@ var VaultArchivePlugin = class extends import_obsidian2.Plugin {
   async onload() {
     var _a;
     this.settings = { ...DEFAULT_SETTINGS, ...(_a = await this.loadData()) != null ? _a : {} };
-    this.register("backup", "Backup vault", new BackupCommand());
-    this.register("push", "Push backup repository", new PushCommand());
-    this.register("pull", "Pull backup repository", new PullCommand());
-    this.register("full-backup", "Full backup (backup and push)", new FullBackupCommand());
-    this.register("restore", "Restore vault backup", new RestoreCommand());
-    this.register("configure-backup", "Configure backup", new ConfigureBackupCommand());
+    this.registerVaultCommand("backup", "Backup vault", new BackupCommand());
+    this.registerVaultCommand("push", "Push backup repository", new PushCommand());
+    this.registerVaultCommand("pull", "Pull backup repository", new PullCommand());
+    this.registerVaultCommand("full-backup", "Full backup (backup and push)", new FullBackupCommand());
+    this.registerVaultCommand("restore", "Restore vault backup", new RestoreCommand());
+    this.registerVaultCommand("configure-backup", "Configure backup", new ConfigureBackupCommand());
   }
-  register(id, name, command) {
+  registerVaultCommand(id, name, command) {
     this.addCommand({ id, name, callback: () => this.handleCommand(command) });
   }
   async handleCommand(command) {

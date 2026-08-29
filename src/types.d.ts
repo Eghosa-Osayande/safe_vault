@@ -10,6 +10,7 @@ declare module "obsidian" {
   export class Plugin {
     app: App;
     addCommand(command: { id: string; name: string; callback: () => void | Promise<void> }): void;
+    register(callback: () => unknown): void;
     loadData(): Promise<unknown>;
     saveData(data: unknown): Promise<void>;
   }
