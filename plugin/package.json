@@ -1,0 +1,10 @@
+{
+  "name": "obsidian-vault-crypt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Archive, encrypt, version, sync, and restore an Obsidian vault.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node tests/integration.js"
+  }
+}

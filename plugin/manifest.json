@@ -1,0 +1,9 @@
+{
+  "id": "vault-crypt",
+  "name": "Vault Crypt",
+  "version": "1.0.0",
+  "minAppVersion": "1.5.0",
+  "description": "Creates optional encrypted vault archives that can pushed to a remote server location (eg. git repo)",
+  "author": "Eghosa Osayande",
+  "isDesktopOnly": true
+}
