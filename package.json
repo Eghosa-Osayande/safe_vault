@@ -4,7 +4,11 @@
   "private": true,
   "description": "Archive, encrypt, version, sync, and restore an Obsidian vault.",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc --noEmit && node esbuild.config.mjs production",
     "test": "npm run build && node tests/integration.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

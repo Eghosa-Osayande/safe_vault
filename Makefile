@@ -1,4 +1,4 @@
-.PHONY: build-dist
+.PHONY: build
 
-build-dist:
-	tsc -p src/tsconfig.json --outDir dist
+build:
+	npm run build
