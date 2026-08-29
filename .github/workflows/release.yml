@@ -30,6 +30,9 @@ jobs:
       - name: Build plugin
         run: npm run build
 
+      - name: Package release
+        run: npm run package:release
+
       - name: Generate artifact attestation
         uses: actions/attest@v4
         with:
@@ -37,6 +40,11 @@ jobs:
             main.js
             manifest.json
             styles.css
+            versions.json
+            release/vault-crypt
+
+      - name: Zip release folder
+        run: cd release && zip -r vault-crypt.zip vault-crypt
 
       - name: Create GitHub release
         env:
@@ -47,6 +55,8 @@ jobs:
           gh release create "$TAG" \
             --title="$TAG" \
             --generate-notes \
+            versions.json \
             main.js \
             manifest.json \
-            styles.css
+            styles.css \
+            release/vault-crypt.zip

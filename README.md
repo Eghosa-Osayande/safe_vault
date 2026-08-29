@@ -44,6 +44,16 @@ Obsidian needs `manifest.json` and a built `main.js` in the plugin folder before
 
 If you are installing from the repository checkout instead of a release asset, run `npm run build` first so `main.js` exists, then reload Obsidian.
 
+Important: the plugin folder name must also be `vault-crypt` to match the manifest `id`. If you copy the repository directory itself as `vault_crypt`, Obsidian will not load it.
+
+For GitHub releases, run:
+
+```sh
+npm run package:release
+```
+
+This creates `release/vault-crypt/` with the exact folder layout Obsidian expects.
+
 ## Architecture
 
 Domain interfaces are in `plugin/domain.ts`. Naming, encryption, archive, and remote behavior use strategy interfaces and factories. Commands contain the application workflows, configuration bridges saved settings to concrete strategies, Node adapters isolate filesystem/process/Git access, and the Obsidian adapter owns all modal and notice APIs.
