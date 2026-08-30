@@ -2,6 +2,7 @@
   "name": "obsidian-vault-crypt",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "description": "Archive, encrypt, version, sync, and restore an Obsidian vault.",
   "scripts": {
     "dev": "node esbuild.config.mjs",
