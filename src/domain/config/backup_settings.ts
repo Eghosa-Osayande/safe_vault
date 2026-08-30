@@ -1,5 +1,5 @@
 export type NamingStrategyKind = "same-delete" | "same-overwrite" | "dated" | "custom";
-export type EncryptionStrategyKind = "none" | "age";
+export type EncryptionStrategyKind = "none" | "age" | "password";
 export type VersionControlStrategyKind = "none" | "git";
 export type RemoteStrategyKind = "none" | "git";
 
