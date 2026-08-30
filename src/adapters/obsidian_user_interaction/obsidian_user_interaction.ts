@@ -9,6 +9,7 @@ import { generateAgeIdentityFiles } from "../../strategies";
 
 type Resolve<T> = (value: T) => void;
 type PickPath = (request: FilePickerRequest) => Promise<string | null>;
+type ScrollPosition = { element: HTMLElement; left: number; top: number };
 
 export function validatePasswordPromptValues(password: string, confirmation: string, confirm: boolean): void {
   if (!password) throw new Error("Password cannot be empty.");
@@ -158,7 +159,7 @@ class ConfigurationModal extends Modal {
   }
 
   private render(preserveScroll = false): void {
-    const scrollTop = preserveScroll ? this.contentEl.scrollTop : 0;
+    const scrollPositions = preserveScroll ? this.captureScrollPositions() : [];
     this.contentEl.empty();
     this.titleEl.setText("Configure plugin");
 
@@ -279,7 +280,27 @@ class ConfigurationModal extends Modal {
     }
 
     this.actions();
-    if (preserveScroll) this.contentEl.scrollTop = scrollTop;
+    if (preserveScroll) {
+      this.restoreScrollPositions(scrollPositions);
+      window.requestAnimationFrame(() => this.restoreScrollPositions(scrollPositions));
+    }
+  }
+
+  private captureScrollPositions(): ScrollPosition[] {
+    const positions: ScrollPosition[] = [];
+    let element: HTMLElement | null = this.contentEl;
+    while (element) {
+      positions.push({ element, left: element.scrollLeft, top: element.scrollTop });
+      element = element.parentElement;
+    }
+    return positions;
+  }
+
+  private restoreScrollPositions(positions: ScrollPosition[]): void {
+    positions.forEach(({ element, left, top }) => {
+      element.scrollLeft = left;
+      element.scrollTop = top;
+    });
   }
 
   private heading(title: string): void {
