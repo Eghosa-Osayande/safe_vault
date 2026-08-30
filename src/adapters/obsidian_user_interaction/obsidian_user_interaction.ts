@@ -159,26 +159,23 @@ class ConfigurationModal extends Modal {
 
   private render(): void {
     this.contentEl.empty();
-    this.titleEl.setText("Configure vault backup");
-    this.contentEl.createEl("p", {
-      text: "Configure where backups are stored and how they are archived, protected, and synchronized.",
-      cls: "vault-archive-config-intro",
-    });
+    this.titleEl.setText("Configure plugin");
+    // this.contentEl.createEl("p", {
+    //   text: "Configure where backups are stored and how they are archived, protected, and synchronized.",
+    //   cls: "vault-archive-config-intro",
+    // });
     this.actions();
 
     this.heading("Directories");
 
-    const showVaultDirectoryOption=false;
-    if (showVaultDirectoryOption) {
-      this.path("Vault directory", "Current vault", this.draft.vaultDirectory, "directory", (value) => {
-        this.draft.vaultDirectory = value;
-      });
-    }
-
+    // this.path("Vault directory", "Current vault", this.draft.vaultDirectory, "directory", (value) => {
+    //   this.draft.vaultDirectory = value;
+    // });
 
     this.path("Backup directory", "/path/to/backups", this.draft.backupDirectory, "directory", (value) => {
       this.draft.backupDirectory = value;
     });
+
     new Setting(this.contentEl)
       .setName("Excluded paths")
       .setDesc("One exact vault-relative path per line. End folders with /. Wildcards are not supported.")
