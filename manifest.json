@@ -1,7 +1,7 @@
 {
-  "id": "vault_crypt",
-  "name": "Vault Crypt",
-  "version": "0.0.11",
+  "id": "safe_vault",
+  "name": "Safe Vault",
+  "version": "0.0.12",
   "minAppVersion": "1.5.0",
   "description": "Creates optional encrypted vault archives that can pushed to a remote server location (eg. git repo)",
   "author": "Eghosa Osayande",

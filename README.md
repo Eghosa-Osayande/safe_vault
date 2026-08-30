@@ -1,8 +1,7 @@
-# Vault Crypt: Encrypted Archives for Obsidian
+# Safe Vault: Encrypted Archives for Obsidian
 
-Vault Archive is a desktop-only Obsidian plugin that creates compressed vault snapshots, optionally encrypts them with `age`, commits them to a separate Git repository, and can synchronize that repository with a remote.
+Safe Vault is a desktop-only Obsidian plugin that creates compressed vault snapshots, optionally encrypts them with `age`, commits them to a separate Git repository, and can synchronize that repository with a remote.
 
-The implementation is entirely TypeScript. It does not call the legacy `Makefile` or `backup.sh`, and it never runs Git commands in the vault repository.
 
 ## Requirements
 
@@ -28,22 +27,3 @@ The naming strategies are fixed-name with a separate delete commit, fixed-name o
 
 For age backups, configure an age recipient. Restoring also requires the path to a matching age identity file. Secrets are not copied into the archive by the plugin, but configuration is stored in Obsidian's plugin data like other plugin settings.
 
-## Build
-
-From the repository root:
-
-```sh
-npm run build
-```
-
-Obsidian needs `manifest.json` and a built `main.js` in the plugin folder before it can load the plugin. For manual installation, copy these files into `.obsidian/plugins/vault-crypt/`:
-
-- `manifest.json`
-- `main.js`
-- `styles.css`
-
-If you are installing from the repository checkout instead of a release asset, run `npm run build` first so `main.js` exists, then reload Obsidian.
-
-## Architecture
-
-Domain interfaces are in `plugin/domain.ts`. Naming, encryption, archive, and remote behavior use strategy interfaces and factories. Commands contain the application workflows, configuration bridges saved settings to concrete strategies, Node adapters isolate filesystem/process/Git access, and the Obsidian adapter owns all modal and notice APIs.
