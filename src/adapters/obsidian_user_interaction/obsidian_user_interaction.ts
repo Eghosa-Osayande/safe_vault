@@ -168,7 +168,8 @@ class ConfigurationModal extends Modal {
 
     this.heading("Directories");
 
-    if (1 === 1) {
+    const showVaultDirectoryOption=false;
+    if (showVaultDirectoryOption) {
       this.path("Vault directory", "Current vault", this.draft.vaultDirectory, "directory", (value) => {
         this.draft.vaultDirectory = value;
       });
