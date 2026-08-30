@@ -1,9 +1,9 @@
 {
-  "id": "safe_vault",
+  "id": "safe-vault",
   "name": "Safe Vault",
   "version": "0.0.15",
   "minAppVersion": "1.5.0",
-  "description": "Back up your vault as an archive, with optional encryption and Git version control.",
+  "description": "Backup your vault as an archive, with optional encryption and Git version control.",
   "author": "Eghosa Osayande",
   "isDesktopOnly": true
 }
