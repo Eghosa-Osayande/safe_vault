@@ -4,11 +4,16 @@ import { normalizeBackupSettings, normalizeExcludedVaultPaths } from "../../doma
 import type { BackupSettings } from "../../domain/config";
 import type { FileProxy, FileSystem } from "../../domain/file_system";
 import type { ProcessRunner } from "../../domain/process_runner";
-import type { FilePickerRequest, UserInteraction } from "../../domain/user_interaction";
+import type { FilePickerRequest, PasswordPromptRequest, UserInteraction } from "../../domain/user_interaction";
 import { generateAgeIdentityFiles } from "../../strategies";
 
 type Resolve<T> = (value: T) => void;
 type PickPath = (request: FilePickerRequest) => Promise<string | null>;
+
+export function validatePasswordPromptValues(password: string, confirmation: string, confirm: boolean): void {
+  if (!password) throw new Error("Password cannot be empty.");
+  if (confirm && password !== confirmation) throw new Error("Passwords do not match.");
+}
 
 class TextPromptModal extends Modal {
   private value: string;
@@ -31,6 +36,55 @@ class TextPromptModal extends Modal {
       this.resolveValue(this.value);
       this.close();
     }));
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+    if (!this.settled) this.resolveValue(null);
+  }
+}
+
+class PasswordPromptModal extends Modal {
+  private password = "";
+  private confirmation = "";
+  private settled = false;
+
+  constructor(
+    app: App,
+    private readonly request: PasswordPromptRequest,
+    private readonly resolveValue: Resolve<string | null>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.titleEl.setText(this.request.title);
+    new Setting(this.contentEl).setName("Password").addText((text) => {
+      text.inputEl.type = "password";
+      text.onChange((value) => { this.password = value; });
+    });
+    if (this.request.confirm) {
+      new Setting(this.contentEl).setName("Confirm password").addText((text) => {
+        text.inputEl.type = "password";
+        text.onChange((value) => { this.confirmation = value; });
+      });
+    }
+    new Setting(this.contentEl)
+      .addButton((button) => button.setButtonText("Cancel").onClick(() => this.close()))
+      .addButton((button) => button.setButtonText("Continue").setCta().onClick(() => this.submit()));
+  }
+
+  private submit(): void {
+    try {
+      validatePasswordPromptValues(this.password, this.confirmation, this.request.confirm);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      new Notice(message, 5000);
+      return;
+    }
+    this.settled = true;
+    this.resolveValue(this.password);
+    this.close();
   }
 
   onClose(): void {
@@ -110,6 +164,7 @@ class ConfigurationModal extends Modal {
       text: "Configure where backups are stored and how they are archived, protected, and synchronized.",
       cls: "vault-archive-config-intro",
     });
+    this.actions();
 
     this.heading("Directories");
     this.path("Vault directory", "Current vault", this.draft.vaultDirectory, "directory", (value) => {
@@ -164,26 +219,33 @@ class ConfigurationModal extends Modal {
     if (this.draft.encryptionStrategy !== "none") {
       new Setting(this.contentEl).setName("Encryption strategy").addDropdown((dropdown) => dropdown
         .addOption("age", "age")
+        .addOption("password", "Password")
         .setValue(this.draft.encryptionStrategy)
         .onChange((value) => {
           this.draft.encryptionStrategy = value as BackupSettings["encryptionStrategy"];
           this.render();
         }));
-      new Setting(this.contentEl)
-        .setName("Generate age identity")
-        .setDesc("Create a new identity and sibling .pub recipient file, then fill the fields below.")
-        .addButton((button) => button.setButtonText("Generate").onClick(() => {
-          void this.generateAgeIdentity();
-        }));
-      this.path("Recipient file", "/path/to/identity.txt.pub", this.draft.ageRecipientPath, "file", (value) => {
-        this.draft.ageRecipientPath = value;
-      });
-      this.text("Recipient value", "age1...", this.draft.ageRecipient, (value) => {
-        this.draft.ageRecipient = value;
-      });
-      this.path("Identity file", "/path/to/identity.txt", this.draft.ageIdentityPath, "file", (value) => {
-        this.draft.ageIdentityPath = value;
-      });
+      if (this.draft.encryptionStrategy === "age") {
+        new Setting(this.contentEl)
+          .setName("Generate age identity")
+          .setDesc("Create a new identity and sibling .pub recipient file, then fill the fields below.")
+          .addButton((button) => button.setButtonText("Generate").onClick(() => {
+            void this.generateAgeIdentity();
+          }));
+        this.path("Recipient file", "/path/to/identity.txt.pub", this.draft.ageRecipientPath, "file", (value) => {
+          this.draft.ageRecipientPath = value;
+        });
+        this.text("Recipient value", "age1...", this.draft.ageRecipient, (value) => {
+          this.draft.ageRecipient = value;
+        });
+        this.path("Secret identity file", "/path/to/identity.txt", this.draft.ageIdentityPath, "file", (value) => {
+          this.draft.ageIdentityPath = value;
+        });
+      } else {
+        new Setting(this.contentEl)
+          .setName("Password encryption")
+          .setDesc("The password is requested for every backup and restore and is never saved.");
+      }
     }
 
     this.heading("Version Control");
@@ -217,13 +279,17 @@ class ConfigurationModal extends Modal {
       });
     }
 
-    new Setting(this.contentEl)
-      .addButton((button) => button.setButtonText("Cancel").onClick(() => this.close()))
-      .addButton((button) => button.setButtonText("Save configuration").setCta().onClick(() => this.save()));
+    this.actions();
   }
 
   private heading(title: string): void {
     this.contentEl.createEl("h3", { text: title, cls: "vault-archive-config-heading" });
+  }
+
+  private actions(): void {
+    new Setting(this.contentEl)
+      .addButton((button) => button.setButtonText("Cancel").onClick(() => this.close()))
+      .addButton((button) => button.setButtonText("Save configuration").setCta().onClick(() => this.save()));
   }
 
   private text(name: string, placeholder: string, value: string, update: (value: string) => void): void {
@@ -245,7 +311,14 @@ class ConfigurationModal extends Modal {
         text.setPlaceholder(placeholder).setValue(value).onChange(update);
       })
       .addButton((button) => button.setButtonText("Browse").onClick(() => {
-        void this.pickPath({ kind, mode: "open", title: `Select ${name.toLowerCase()}`, defaultPath: value || undefined })
+        void this.pickPath({
+          kind,
+          mode: "open",
+          title: `Select ${name.toLowerCase()}`,
+          defaultPath: value || undefined,
+          showHiddenFiles: true,
+          canCreateDirectories: kind === "directory",
+        })
           .then((selected) => {
             if (!selected) return;
             update(selected);
@@ -268,6 +341,8 @@ class ConfigurationModal extends Modal {
       mode: "save",
       title: "Save age identity",
       defaultPath: this.draft.ageIdentityPath || "age-identity.txt",
+      showHiddenFiles: true,
+      canCreateDirectories: true,
     });
     if (!identityPath) return;
     try {
@@ -329,15 +404,27 @@ export class ObsidianUserInteraction implements UserInteraction {
     ).open());
   }
 
+  promptPassword(request: PasswordPromptRequest): Promise<string | null> {
+    return new Promise((resolve) => new PasswordPromptModal(this.app, request, resolve).open());
+  }
+
   async pickPath(request: FilePickerRequest): Promise<string | null> {
+    const extraProperties = [
+      ...(request.showHiddenFiles ? ["showHiddenFiles"] : []),
+      ...(request.canCreateDirectories ? ["createDirectory"] : []),
+    ];
     if (request.mode === "save") {
-      const result = await remote.dialog.showSaveDialog({ title: request.title, defaultPath: request.defaultPath });
+      const result = await remote.dialog.showSaveDialog({
+        title: request.title,
+        defaultPath: request.defaultPath,
+        properties: extraProperties,
+      });
       return result.canceled ? null : result.filePath ?? null;
     }
     const result = await remote.dialog.showOpenDialog({
       title: request.title,
       defaultPath: request.defaultPath,
-      properties: [request.kind === "directory" ? "openDirectory" : "openFile"],
+      properties: [request.kind === "directory" ? "openDirectory" : "openFile", ...extraProperties],
     });
     return result.canceled ? null : result.filePaths[0] ?? null;
   }

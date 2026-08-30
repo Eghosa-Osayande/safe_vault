@@ -5,6 +5,7 @@ const originalLoad = Module._load;
 let openResult = { canceled: false, filePaths: ["/selected/folder"] };
 let saveResult = { canceled: false, filePath: "/selected/identity.txt" };
 let lastOpenOptions = null;
+let lastSaveOptions = null;
 
 Module._load = function patchedLoad(request, parent, isMain) {
   if (request === "electron") {
@@ -15,7 +16,10 @@ Module._load = function patchedLoad(request, parent, isMain) {
             lastOpenOptions = options;
             return openResult;
           },
-          showSaveDialog: async () => saveResult,
+          showSaveDialog: async (options) => {
+            lastSaveOptions = options;
+            return saveResult;
+          },
         },
       },
     };
@@ -33,11 +37,32 @@ Module._load = function patchedLoad(request, parent, isMain) {
 
 (async () => {
   try {
-    const { ObsidianUserInteraction } = require("../.test-dist/src/adapters/obsidian_user_interaction/index.js");
+    const {
+      ObsidianUserInteraction,
+      validatePasswordPromptValues,
+    } = require("../.test-dist/src/adapters/obsidian_user_interaction/index.js");
     const interaction = new ObsidianUserInteraction({}, {}, {});
-    assert.equal(await interaction.pickPath({ kind: "directory", mode: "open", title: "Choose folder" }), "/selected/folder");
-    assert.deepEqual(lastOpenOptions.properties, ["openDirectory"]);
-    assert.equal(await interaction.pickPath({ kind: "file", mode: "save", title: "Save identity" }), "/selected/identity.txt");
+    assert.equal(await interaction.pickPath({
+      kind: "directory",
+      mode: "open",
+      title: "Choose folder",
+      showHiddenFiles: true,
+      canCreateDirectories: true,
+    }), "/selected/folder");
+    assert.deepEqual(lastOpenOptions.properties, ["openDirectory", "showHiddenFiles", "createDirectory"]);
+    assert.equal(await interaction.pickPath({
+      kind: "file",
+      mode: "save",
+      title: "Save identity",
+      showHiddenFiles: true,
+      canCreateDirectories: true,
+    }), "/selected/identity.txt");
+    assert.deepEqual(lastSaveOptions.properties, ["showHiddenFiles", "createDirectory"]);
+
+    assert.doesNotThrow(() => validatePasswordPromptValues("secret", "secret", true));
+    assert.doesNotThrow(() => validatePasswordPromptValues("secret", "", false));
+    assert.throws(() => validatePasswordPromptValues("", "", false), /empty/);
+    assert.throws(() => validatePasswordPromptValues("secret", "different", true), /do not match/);
 
     openResult = { canceled: true, filePaths: [] };
     saveResult = { canceled: true };

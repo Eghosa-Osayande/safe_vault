@@ -103,7 +103,7 @@ export class DefaultConfigFactory implements ConfigFactory {
   ) {
     const runner = platformBridge.getProcessRunner();
     const fileSystem = platformBridge.getFileSystem();
-    this.encryptionFactory = new DefaultEncryptionStrategyFactory(runner);
+    this.encryptionFactory = new DefaultEncryptionStrategyFactory(runner, platformBridge.getUserInteraction());
     this.remoteFactory = new DefaultRemoteStrategyFactory(runner);
     this.archiveFactory = new TarArchiveStrategyFactory(runner, fileSystem);
     this.versionControlFactory = new DefaultVersionControlStrategyFactory(runner, fileSystem);

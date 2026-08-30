@@ -1,18 +1,19 @@
-import type { ProcessResult, ProcessRunner } from "../../domain/process_runner";
+import type { ProcessResult, ProcessRunner, ProcessRunOptions } from "../../domain/process_runner";
 
 const childProcess = require("node:child_process") as {
   execFile(command: string, args: string[], options: object, callback: (error: { code?: number | string; message: string } | null, stdout: string, stderr: string) => void): void;
 };
 
 export class NodeProcessRunner implements ProcessRunner {
-  async run(command: string, args: string[], cwd?: string): Promise<ProcessResult> {
+  async run(command: string, args: string[], options: ProcessRunOptions = {}): Promise<ProcessResult> {
     return new Promise((resolve, reject) => {
       const currentPath = process.env.PATH || "";
       const env = {
         ...process.env,
+        ...options.environment,
         PATH: ["/opt/homebrew/bin", "/usr/local/bin", currentPath].filter(Boolean).join(":"),
       };
-      childProcess.execFile(command, args, { cwd, env, maxBuffer: 20 * 1024 * 1024 }, (error, stdout, stderr) => {
+      childProcess.execFile(command, args, { cwd: options.cwd, env, maxBuffer: 20 * 1024 * 1024 }, (error, stdout, stderr) => {
         if (!error) {
           resolve({ stdout, stderr, exitCode: 0 });
           return;

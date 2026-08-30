@@ -39,7 +39,7 @@ declare module "electron" {
   interface SaveDialogResult { canceled: boolean; filePath?: string; }
   interface Dialog {
     showOpenDialog(options: { title: string; defaultPath?: string; properties: string[] }): Promise<OpenDialogResult>;
-    showSaveDialog(options: { title: string; defaultPath?: string }): Promise<SaveDialogResult>;
+    showSaveDialog(options: { title: string; defaultPath?: string; properties?: string[] }): Promise<SaveDialogResult>;
   }
   export const remote: { dialog: Dialog };
 }

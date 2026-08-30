@@ -1,5 +1,5 @@
 export type NamingStrategyKind = "same-delete" | "same-overwrite" | "dated" | "custom";
-export type EncryptionStrategyKind = "none" | "age";
+export type EncryptionStrategyKind = "none" | "age" | "password";
 export type VersionControlStrategyKind = "none" | "git";
 export type RemoteStrategyKind = "none" | "git";
 
@@ -63,7 +63,7 @@ export function normalizeBackupSettings(value: unknown): BackupSettings {
     namingStrategy: enumValue(source, "namingStrategy", ["same-delete", "same-overwrite", "dated", "custom"], DEFAULT_SETTINGS.namingStrategy),
     sameArchiveName: stringValue(source, "sameArchiveName", DEFAULT_SETTINGS.sameArchiveName),
     dateFormat: stringValue(source, "dateFormat", DEFAULT_SETTINGS.dateFormat),
-    encryptionStrategy: enumValue(source, "encryptionStrategy", ["none", "age"], DEFAULT_SETTINGS.encryptionStrategy),
+    encryptionStrategy: enumValue(source, "encryptionStrategy", ["none", "age", "password"], DEFAULT_SETTINGS.encryptionStrategy),
     ageRecipientPath: stringValue(source, "ageRecipientPath", DEFAULT_SETTINGS.ageRecipientPath),
     ageRecipient: stringValue(source, "ageRecipient", DEFAULT_SETTINGS.ageRecipient),
     ageIdentityPath: stringValue(source, "ageIdentityPath", DEFAULT_SETTINGS.ageIdentityPath),

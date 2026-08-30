@@ -19,22 +19,22 @@ export class GitVersionControlStrategy implements VersionControlStrategy {
 
   async ensureInitialized(directory: FolderProxy): Promise<void> {
     try {
-      const topLevel = (await this.runner.run("git", ["rev-parse", "--show-toplevel"], directory.path)).stdout.trim();
+      const topLevel = (await this.runner.run("git", ["rev-parse", "--show-toplevel"], { cwd: directory.path })).stdout.trim();
       if (this.fileSystem.resolvePath(topLevel) !== this.fileSystem.resolvePath(directory.path)) {
-        await this.runner.run("git", ["init"], directory.path);
+        await this.runner.run("git", ["init"], { cwd: directory.path });
       }
     } catch {
-      await this.runner.run("git", ["init"], directory.path);
+      await this.runner.run("git", ["init"], { cwd: directory.path });
     }
   }
 
   async commitAll(directory: FolderProxy, message: string): Promise<boolean> {
-    await this.runner.run("git", ["add", "-A"], directory.path);
+    await this.runner.run("git", ["add", "-A"], { cwd: directory.path });
     try {
-      await this.runner.run("git", ["diff", "--cached", "--quiet"], directory.path);
+      await this.runner.run("git", ["diff", "--cached", "--quiet"], { cwd: directory.path });
       return false;
     } catch {
-      await this.runner.run("git", ["commit", "-m", message], directory.path);
+      await this.runner.run("git", ["commit", "-m", message], { cwd: directory.path });
       return true;
     }
   }
