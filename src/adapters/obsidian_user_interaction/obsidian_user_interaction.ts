@@ -167,9 +167,14 @@ class ConfigurationModal extends Modal {
     this.actions();
 
     this.heading("Directories");
-    this.path("Vault directory", "Current vault", this.draft.vaultDirectory, "directory", (value) => {
-      this.draft.vaultDirectory = value;
-    });
+
+    if (1 === 1) {
+      this.path("Vault directory", "Current vault", this.draft.vaultDirectory, "directory", (value) => {
+        this.draft.vaultDirectory = value;
+      });
+    }
+
+
     this.path("Backup directory", "/path/to/backups", this.draft.backupDirectory, "directory", (value) => {
       this.draft.backupDirectory = value;
     });
@@ -383,7 +388,7 @@ export class ObsidianUserInteraction implements UserInteraction {
     private readonly app: App,
     private readonly fileSystem: FileSystem,
     private readonly runner: ProcessRunner,
-  ) {}
+  ) { }
 
   promptArchiveName(suggestedName: string): Promise<string | null> {
     return new Promise((resolve) => new TextPromptModal(this.app, "Name this backup", suggestedName, resolve).open());
