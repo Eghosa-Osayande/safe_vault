@@ -9,10 +9,9 @@ class TarArchiveStrategy implements ArchiveStrategy {
   ) {}
 
   async createArchive(source: FolderProxy, destinationPath: string, excludedPaths: string[]): Promise<FileProxy> {
-    const parent = this.fileSystem.parentPath(source.path);
     const root = this.fileSystem.baseName(source.path);
     const excludeArgs = excludedPaths.map((excluded) => `--exclude=${root}/${excluded.replace(/^\.?\//, "").replace(/\/$/, "")}`);
-    await this.runner.run("tar", ["-czf", destinationPath, ...excludeArgs, "-C", parent, root]);
+    await this.runner.run("tar", ["-czf", destinationPath, ...excludeArgs, "-C", source.path, "."]);
     return this.fileSystem.file(destinationPath);
   }
 
