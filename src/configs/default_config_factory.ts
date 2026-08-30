@@ -1,3 +1,4 @@
+import { normalizeBackupSettings, normalizeExcludedVaultPaths } from "../domain/config";
 import type { BackupSettings, Config, ConfigFactory } from "../domain/config";
 import type { FolderProxy } from "../domain/file_system";
 import type { PlatformBridge } from "../domain/platform_bridge";
@@ -6,7 +7,7 @@ import {
   DefaultEncryptionStrategyFactory,
   DefaultNamingStrategyFactory,
   DefaultRemoteStrategyFactory,
-  GitVersionControlStrategy,
+  DefaultVersionControlStrategyFactory,
   TarArchiveStrategyFactory,
 } from "../strategies";
 
@@ -32,10 +33,6 @@ class ResolvedConfig implements Config {
 
   getBackupDirectory(): FolderProxy {
     return this.platformBridge.getFileSystem().folder(this.resolveSettingPath(this.settings.backupDirectory));
-  }
-
-  getBackupGitDirectory(): FolderProxy {
-    return this.platformBridge.getFileSystem().folder(this.resolveSettingPath(this.settings.backupGitDirectory || this.settings.backupDirectory));
   }
 
   getEncryptionStrategy(): EncryptionStrategy {
@@ -67,30 +64,27 @@ class ResolvedConfig implements Config {
   }
 
   getExcludedPaths(): string[] {
-    const excluded = this.settings.excludedVaultPaths.map((item) => item.trim()).filter(Boolean);
-    if (this.settings.excludeVaultGit && !excluded.includes(".git")) excluded.push(".git");
-    return excluded;
+    return normalizeExcludedVaultPaths(this.settings.excludedVaultPaths);
   }
 
   async validate(requireBackup = true): Promise<void> {
     const fileSystem = this.platformBridge.getFileSystem();
     const runner = this.platformBridge.getProcessRunner();
-    if (!(await runner.available("git"))) throw new Error("git is not installed or is not available on PATH.");
+    if ((this.settings.versionControlStrategy === "git" || this.settings.remoteStrategy === "git") && !(await runner.available("git"))) {
+      throw new Error("git is not installed or is not available on PATH.");
+    }
     if (!(await runner.available("tar"))) throw new Error("tar is not installed or is not available on PATH.");
     if (!(await fileSystem.exists(this.vaultPath))) throw new Error(`Vault directory does not exist: ${this.vaultPath}`);
+    normalizeExcludedVaultPaths(this.settings.excludedVaultPaths);
     if (!this.settings.backupDirectory.trim()) {
       if (requireBackup) throw new Error("No backup directory is configured. Run Configure backup first.");
       return;
     }
     const backup = this.resolveSettingPath(this.settings.backupDirectory);
-    const repository = this.resolveSettingPath(this.settings.backupGitDirectory || this.settings.backupDirectory);
-    const relative = fileSystem.relativePath(repository, backup);
-    if (relative.startsWith("..") || fileSystem.isAbsolutePath(relative)) throw new Error("The backup Git directory must be the backup directory or one of its parent directories.");
-    const vaultToRepository = fileSystem.relativePath(this.vaultPath, repository);
-    const repositoryToVault = fileSystem.relativePath(repository, this.vaultPath);
+    const vaultToRepository = fileSystem.relativePath(this.vaultPath, backup);
+    const repositoryToVault = fileSystem.relativePath(backup, this.vaultPath);
     const isInside = (relativePath: string) => relativePath === "" || (!relativePath.startsWith("..") && !fileSystem.isAbsolutePath(relativePath));
-    if (isInside(vaultToRepository) || isInside(repositoryToVault)) throw new Error("The vault and backup Git directory must not overlap.");
-    await fileSystem.ensureFolder(repository);
+    if (isInside(vaultToRepository) || isInside(repositoryToVault)) throw new Error("The vault and backup directory must not overlap.");
     await fileSystem.ensureFolder(backup);
     await this.encryption.validate();
   }
@@ -101,7 +95,7 @@ export class DefaultConfigFactory implements ConfigFactory {
   private readonly encryptionFactory: DefaultEncryptionStrategyFactory;
   private readonly remoteFactory: DefaultRemoteStrategyFactory;
   private readonly archiveFactory: TarArchiveStrategyFactory;
-  private readonly versionControl: VersionControlStrategy;
+  private readonly versionControlFactory: DefaultVersionControlStrategyFactory;
 
   constructor(
     private readonly currentVaultPath: string,
@@ -112,25 +106,27 @@ export class DefaultConfigFactory implements ConfigFactory {
     this.encryptionFactory = new DefaultEncryptionStrategyFactory(runner);
     this.remoteFactory = new DefaultRemoteStrategyFactory(runner);
     this.archiveFactory = new TarArchiveStrategyFactory(runner, fileSystem);
-    this.versionControl = new GitVersionControlStrategy(runner, fileSystem);
+    this.versionControlFactory = new DefaultVersionControlStrategyFactory(runner, fileSystem);
   }
 
   create(settings: BackupSettings): Config {
+    const normalizedSettings = normalizeBackupSettings(settings);
     const fileSystem = this.platformBridge.getFileSystem();
-    const vaultPath = fileSystem.resolvePath(settings.vaultDirectory.trim() || this.currentVaultPath);
-    const strategySettings = {
-      ...settings,
-      ageIdentityPath: settings.ageIdentityPath.trim() ? fileSystem.resolvePath(vaultPath, settings.ageIdentityPath) : "",
+    const vaultPath = fileSystem.resolvePath(normalizedSettings.vaultDirectory.trim() || this.currentVaultPath);
+    const strategySettings: BackupSettings = {
+      ...normalizedSettings,
+      ageIdentityPath: normalizedSettings.ageIdentityPath.trim() ? fileSystem.resolvePath(vaultPath, normalizedSettings.ageIdentityPath) : "",
+      ageRecipientPath: normalizedSettings.ageRecipientPath.trim() ? fileSystem.resolvePath(vaultPath, normalizedSettings.ageRecipientPath) : "",
     };
     return new ResolvedConfig(
-      settings,
+      normalizedSettings,
       vaultPath,
       this.platformBridge,
       this.namingFactory.create(strategySettings, this.platformBridge.getUserInteraction()),
       this.encryptionFactory.create(strategySettings, fileSystem),
       this.remoteFactory.create(strategySettings),
       this.archiveFactory.create(),
-      this.versionControl,
+      this.versionControlFactory.create(strategySettings),
     );
   }
 }

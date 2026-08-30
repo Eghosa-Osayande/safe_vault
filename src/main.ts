@@ -2,7 +2,7 @@ import { Notice, Plugin } from "obsidian";
 import { BackupCommand, ConfigureBackupCommand, FullBackupCommand, PullCommand, PushCommand, RestoreCommand } from "./commands";
 import { DefaultConfigFactory } from "./configs";
 import { Command, CommandContext } from "./domain/commands";
-import { BackupSettings, DEFAULT_SETTINGS } from "./domain/config";
+import { BackupSettings, DEFAULT_SETTINGS, normalizeBackupSettings } from "./domain/config";
 import { ObsidianDesktopPlatformBridge } from "./adapters/obsidian_platform_bridge";
 
 export default class VaultArchivePlugin extends Plugin {
@@ -10,7 +10,7 @@ export default class VaultArchivePlugin extends Plugin {
   private running = false;
 
   async onload(): Promise<void> {
-    this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData() as Partial<BackupSettings> | null ?? {}) };
+    this.settings = normalizeBackupSettings(await this.loadData());
     this.registerVaultCommand("backup", "Backup vault", new BackupCommand());
     this.registerVaultCommand("push", "Push backup repository", new PushCommand());
     this.registerVaultCommand("pull", "Pull backup repository", new PullCommand());

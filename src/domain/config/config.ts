@@ -6,7 +6,6 @@ import type { BackupSettings } from "./backup_settings";
 export interface Config {
   getVaultDirectory(): FolderProxy;
   getBackupDirectory(): FolderProxy;
-  getBackupGitDirectory(): FolderProxy;
   getEncryptionStrategy(): EncryptionStrategy;
   getRemoteStrategy(): RemoteStrategy;
   getNamingStrategy(): NamingStrategy;

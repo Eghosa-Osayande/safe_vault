@@ -4,6 +4,7 @@ export interface FileSystemEntity {
 
 export interface FileProxy extends FileSystemEntity {
   read(): Promise<Uint8Array>;
+  write(contents: string | Uint8Array): Promise<void>;
 }
 
 export interface FolderProxy extends FileSystemEntity {

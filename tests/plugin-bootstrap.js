@@ -38,6 +38,7 @@ class Setting {
   setName() { return this; }
   setDesc() { return this; }
   addText() { return this; }
+  addTextArea() { return this; }
   addDropdown() { return this; }
   addToggle() { return this; }
   addButton() { return this; }
@@ -46,6 +47,16 @@ class Setting {
 Module._load = function patchedLoad(request, parent, isMain) {
   if (request === "obsidian") {
     return { Plugin, Notice, Modal, Setting, App: class {} };
+  }
+  if (request === "electron") {
+    return {
+      remote: {
+        dialog: {
+          showOpenDialog: async () => ({ canceled: true, filePaths: [] }),
+          showSaveDialog: async () => ({ canceled: true }),
+        },
+      },
+    };
   }
   return originalLoad.call(this, request, parent, isMain);
 };

@@ -13,7 +13,7 @@ export class ObsidianDesktopPlatformBridge implements PlatformBridge {
   private readonly userInteraction: UserInteraction;
 
   constructor(app: App) {
-    this.userInteraction = new ObsidianUserInteraction(app, this.fileSystem);
+    this.userInteraction = new ObsidianUserInteraction(app, this.fileSystem, this.processRunner);
   }
 
   getFileSystem(): FileSystem {

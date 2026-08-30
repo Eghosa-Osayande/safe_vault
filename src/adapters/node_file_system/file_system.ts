@@ -12,6 +12,10 @@ export class NodeFile implements FileProxy {
   async read(): Promise<Uint8Array> {
     return fs.promises.readFile(this.path);
   }
+
+  async write(contents: string | Uint8Array): Promise<void> {
+    await fs.promises.writeFile(this.path, contents);
+  }
 }
 
 export class NodeFolder implements FolderProxy {

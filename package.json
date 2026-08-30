@@ -7,7 +7,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit && node esbuild.config.mjs production",
     "build:test": "node -e \"require('node:fs').rmSync('.test-dist', { recursive: true, force: true })\" && tsc --project tsconfig.test.json",
-    "test": "npm run build && npm run build:test && node tests/integration.js"
+    "test": "npm run build && npm run build:test && node tests/integration.js && node tests/user-interaction.js && node tests/plugin-bootstrap.js"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

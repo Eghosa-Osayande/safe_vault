@@ -1,6 +1,15 @@
+import type { BackupSettings } from "../domain/config";
 import type { FileSystem, FolderProxy } from "../domain/file_system";
 import type { ProcessRunner } from "../domain/process_runner";
 import type { VersionControlStrategy } from "../domain/strategies";
+
+class NoVersionControlStrategy implements VersionControlStrategy {
+  async ensureInitialized(): Promise<void> {}
+
+  async commitAll(): Promise<boolean> {
+    return false;
+  }
+}
 
 export class GitVersionControlStrategy implements VersionControlStrategy {
   constructor(
@@ -28,5 +37,18 @@ export class GitVersionControlStrategy implements VersionControlStrategy {
       await this.runner.run("git", ["commit", "-m", message], directory.path);
       return true;
     }
+  }
+}
+
+export class DefaultVersionControlStrategyFactory {
+  constructor(
+    private readonly runner: ProcessRunner,
+    private readonly fileSystem: FileSystem,
+  ) {}
+
+  create(settings: BackupSettings): VersionControlStrategy {
+    return settings.versionControlStrategy === "git"
+      ? new GitVersionControlStrategy(this.runner, this.fileSystem)
+      : new NoVersionControlStrategy();
   }
 }

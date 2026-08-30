@@ -9,7 +9,7 @@ export class BackupCommand implements Command {
     const versionControlStrategy = config.getVersionControlStrategy();
     await config.validate();
     const backup = config.getBackupDirectory();
-    const versionControlDirectory = config.getBackupGitDirectory();
+    const versionControlDirectory = config.getBackupDirectory();
     await versionControlStrategy.ensureInitialized(versionControlDirectory);
     const vault = config.getVaultDirectory();
     const naming = config.getNamingStrategy();
@@ -37,6 +37,10 @@ export class BackupCommand implements Command {
     }
 
     const committed = await versionControlStrategy.commitAll(versionControlDirectory, `Create backup ${fileSystem.baseName(finalPath)}`);
-    ui.notice(committed ? `Backup created: ${fileSystem.baseName(finalPath)}` : "Backup archive was unchanged.", 5000);
+    const versionControlDisabled = config.getSettings().versionControlStrategy === "none";
+    ui.notice(
+      committed || versionControlDisabled ? `Backup created: ${fileSystem.baseName(finalPath)}` : "Backup archive was unchanged.",
+      5000,
+    );
   }
 }

@@ -1,1 +1,24 @@
-/* Vault Crypt plugin styles */
+.modal:has(.vault-archive-config-intro) {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.vault-archive-config-intro {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.vault-archive-config-heading {
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin: 1.75rem 0 0.25rem;
+  padding-bottom: 0.4rem;
+}
+
+.vault-archive-config-heading:first-of-type {
+  margin-top: 0.75rem;
+}
+
+.vault-archive-config-intro ~ .setting-item textarea {
+  min-height: 7rem;
+  resize: vertical;
+  width: min(30rem, 100%);
+}

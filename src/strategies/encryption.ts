@@ -25,6 +25,7 @@ class AgeEncryptionStrategy implements EncryptionStrategy {
   readonly extension = ".age";
 
   constructor(
+    private readonly recipientPath: string,
     private readonly recipient: string,
     private readonly identityPath: string,
     private readonly fileSystem: FileSystem,
@@ -32,12 +33,18 @@ class AgeEncryptionStrategy implements EncryptionStrategy {
   ) {}
 
   async validate(): Promise<void> {
-    if (!this.recipient.trim()) throw new Error("An age recipient is required for encrypted backups.");
+    if (!this.recipientPath.trim() && !this.recipient.trim()) throw new Error("An age recipient file or value is required for encrypted backups.");
+    if (this.recipientPath.trim() && !(await this.fileSystem.exists(this.recipientPath))) {
+      throw new Error(`Age recipient file does not exist: ${this.recipientPath}`);
+    }
     if (!(await this.runner.available("age"))) throw new Error("age is not installed or is not available on PATH.");
   }
 
   async encryptFile(source: FileProxy, destinationPath: string): Promise<FileProxy> {
-    await this.runner.run("age", ["-r", this.recipient, "-o", destinationPath, source.path]);
+    const recipientArgs = this.recipientPath.trim()
+      ? ["-R", this.recipientPath]
+      : ["-r", this.recipient];
+    await this.runner.run("age", [...recipientArgs, "-o", destinationPath, source.path]);
     await this.fileSystem.remove(source.path);
     return this.fileSystem.file(destinationPath);
   }
@@ -54,7 +61,7 @@ export class DefaultEncryptionStrategyFactory {
 
   create(settings: BackupSettings, fileSystem: FileSystem): EncryptionStrategy {
     return settings.encryptionStrategy === "age"
-      ? new AgeEncryptionStrategy(settings.ageRecipient, settings.ageIdentityPath, fileSystem, this.runner)
+      ? new AgeEncryptionStrategy(settings.ageRecipientPath, settings.ageRecipient, settings.ageIdentityPath, fileSystem, this.runner)
       : new NoEncryptionStrategy(fileSystem);
   }
 }
