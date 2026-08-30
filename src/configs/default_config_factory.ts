@@ -75,16 +75,30 @@ class ResolvedConfig implements Config {
     }
     if (!(await runner.available("tar"))) throw new Error("tar is not installed or is not available on PATH.");
     if (!(await fileSystem.exists(this.vaultPath))) throw new Error(`Vault directory does not exist: ${this.vaultPath}`);
-    normalizeExcludedVaultPaths(this.settings.excludedVaultPaths);
+    const excludedVaultPaths = normalizeExcludedVaultPaths(this.settings.excludedVaultPaths);
     if (!this.settings.backupDirectory.trim()) {
       if (requireBackup) throw new Error("No backup directory is configured. Run Configure backup first.");
       return;
     }
     const backup = this.resolveSettingPath(this.settings.backupDirectory);
-    const vaultToRepository = fileSystem.relativePath(this.vaultPath, backup);
-    const repositoryToVault = fileSystem.relativePath(backup, this.vaultPath);
-    const isInside = (relativePath: string) => relativePath === "" || (!relativePath.startsWith("..") && !fileSystem.isAbsolutePath(relativePath));
-    if (isInside(vaultToRepository) || isInside(repositoryToVault)) throw new Error("The vault and backup directory must not overlap.");
+    const vaultToBackup = fileSystem.relativePath(this.vaultPath, backup);
+    const backupToVault = fileSystem.relativePath(backup, this.vaultPath);
+    const isNested = (relativePath: string) => relativePath !== ""
+      && !relativePath.startsWith("..")
+      && !fileSystem.isAbsolutePath(relativePath);
+    const normalizedBackupPath = vaultToBackup.replace(/\\/g, "/").replace(/\/+$/, "");
+    const backupIsExcluded = excludedVaultPaths.some((excludedPath) => {
+      if (!excludedPath.endsWith("/")) return false;
+      const excludedFolder = excludedPath.replace(/\/+$/, "");
+      return normalizedBackupPath === excludedFolder || normalizedBackupPath.startsWith(`${excludedFolder}/`);
+    });
+
+    if (vaultToBackup === "" || backupToVault === "" || isNested(backupToVault)) {
+      throw new Error("The vault and backup directory must not overlap.");
+    }
+    if (isNested(vaultToBackup) && !backupIsExcluded) {
+      throw new Error("A backup directory inside the vault must be covered by an excluded folder path.");
+    }
     await fileSystem.ensureFolder(backup);
     await this.encryption.validate();
   }

@@ -45,9 +45,12 @@ async function testNodeFileSystemAndArchive(root) {
     const archive = await archiveStrategy.createArchive(fileSystem.folder(sourcePath), firstTemporaryFile.path, []);
     assert.ok(archive instanceof NodeFile);
     assert.ok((await archive.read()).byteLength > 0);
+    const listing = (await new NodeProcessRunner().run("tar", ["-tzf", archive.path])).stdout;
+    assert.match(listing, /^\.\/content\.txt$/m);
+    assert.doesNotMatch(listing, /archive-source/);
     await archiveStrategy.restoreArchive(archive, fileSystem.folder(destinationPath));
     assert.equal(
-      fs.readFileSync(fileSystem.joinPath(destinationPath, "archive-source", "content.txt"), "utf8"),
+      fs.readFileSync(fileSystem.joinPath(destinationPath, "content.txt"), "utf8"),
       "archive content",
     );
   } finally {
@@ -127,13 +130,14 @@ async function testPlainBackupRestoreAndRemote(root) {
   assert.equal((await fixture.runner.run("git", ["rev-list", "--count", "HEAD"], { cwd: fixture.repositoryPath })).stdout.trim(), "3");
   const archivePath = path.join(fixture.backupPath, "fixed.tar.gz");
   const listing = (await fixture.runner.run("tar", ["-tzf", archivePath])).stdout;
-  assert.match(listing, /vault\/note.md/);
+  assert.match(listing, /^\.\/note\.md$/m);
+  assert.doesNotMatch(listing, /^vault\//m);
   assert.doesNotMatch(listing, /vault\/\.git/);
   assert.doesNotMatch(listing, /ignored-folder/);
   assert.doesNotMatch(listing, /ignored-file\.txt/);
 
   await new RestoreCommand().invoke(fixture.context);
-  assert.equal(fs.readFileSync(path.join(fixture.vault, "restored", "vault", "note.md"), "utf8"), "# version two");
+  assert.equal(fs.readFileSync(path.join(fixture.vault, "restored", "note.md"), "utf8"), "# version two");
 
   const remotePath = path.join(root, "remote.git");
   await fixture.runner.run("git", ["init", "--bare", remotePath]);
@@ -160,6 +164,36 @@ async function testDisabledVersionControl(root) {
   await new BackupCommand().invoke(fixture.context);
   assert.equal(fs.existsSync(path.join(fixture.backupPath, "unversioned.tar.gz")), true);
   assert.equal(fs.existsSync(path.join(fixture.backupPath, ".git")), false);
+}
+
+async function testExcludedBackupInsideVault(root) {
+  const nestedBackup = path.join(root, "vault", "private", "backups");
+  const fixture = await createContext(root, {
+    backupDirectory: nestedBackup,
+    excludedVaultPaths: [".git/", "private/"],
+    namingStrategy: "same-overwrite",
+    sameArchiveName: "nested",
+    encryptionStrategy: "none",
+    versionControlStrategy: "none",
+    remoteStrategy: "none",
+  });
+  await new BackupCommand().invoke(fixture.context);
+  const archivePath = path.join(nestedBackup, "nested.tar.gz");
+  assert.equal(fs.existsSync(archivePath), true);
+  assert.doesNotMatch((await fixture.runner.run("tar", ["-tzf", archivePath])).stdout, /private\/backups/);
+
+  const rejectedRoot = path.join(root, "not-excluded");
+  const rejected = await createContext(rejectedRoot, {
+    backupDirectory: path.join(rejectedRoot, "vault", "backups"),
+    excludedVaultPaths: [".git/"],
+    encryptionStrategy: "none",
+    versionControlStrategy: "none",
+    remoteStrategy: "none",
+  });
+  await assert.rejects(
+    () => rejected.context.config.validate(),
+    /must be covered by an excluded folder path/,
+  );
 }
 
 async function testSettingsAndAgeUtilities(root) {
@@ -328,7 +362,7 @@ async function testAgeBackupRestore(root) {
   await new BackupCommand().invoke(fixture.context);
   assert.equal(fs.existsSync(path.join(fixture.backupPath, "encrypted.tar.gz.age")), true);
   await new RestoreCommand().invoke(fixture.context);
-  assert.equal(fs.readFileSync(path.join(fixture.vault, "restored", "vault", "note.md"), "utf8"), "# version one");
+  assert.equal(fs.readFileSync(path.join(fixture.vault, "restored", "note.md"), "utf8"), "# version one");
 }
 
 (async () => {
@@ -338,11 +372,13 @@ async function testAgeBackupRestore(root) {
     const ageRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vault-archive-age-"));
     const fileSystemRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vault-archive-filesystem-"));
     const disabledRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vault-archive-disabled-"));
+    const nestedBackupRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vault-archive-nested-backup-"));
     const utilityRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vault-archive-utility-"));
-    roots.push(plainRoot, ageRoot, fileSystemRoot, disabledRoot, utilityRoot);
+    roots.push(plainRoot, ageRoot, fileSystemRoot, disabledRoot, nestedBackupRoot, utilityRoot);
     await testNodeFileSystemAndArchive(fileSystemRoot);
     await testPlainBackupRestoreAndRemote(plainRoot);
     await testDisabledVersionControl(disabledRoot);
+    await testExcludedBackupInsideVault(nestedBackupRoot);
     await testSettingsAndAgeUtilities(utilityRoot);
     await testAgeBackupRestore(ageRoot);
     process.stdout.write("Vault Archive integration tests passed\n");

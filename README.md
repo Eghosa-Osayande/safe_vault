@@ -56,20 +56,28 @@ Restores the vault from an existing Safe Vault backup.
 
 Specifies where Safe Vault should store backup archives.
 
-The backup directory must be located **outside the current vault directory**.
+If the backup directory is located in the current vault directory it must be excluded. Otherwise, it must be located **outside the current vault directory**.
 
 For example:
 
 ```text
 Documents/
-├── MyVault/
-│   ├── Notes/
-│   └── Attachments/
-│
-└── VaultBackups/
+├── .backups/
+└── MyVault/
+    ├── Notes/
+    └── Attachments/
 ```
+In this example, `.backups/` can be used as the backup directory because it is outside `MyVault`.
 
-In this example, `VaultBackups` can be used as the backup directory because it is outside `MyVault`.
+Or:
+
+```text
+MyVault/
+    ├── .backups/
+    └── Notes/
+```
+In this example, `.backups/` can only be used as the backup directory if it is excluded from the archive.
+
 
 #### Excluded Paths
 

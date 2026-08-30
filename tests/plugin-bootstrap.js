@@ -68,10 +68,10 @@ Module._load = function patchedLoad(request, parent, isMain) {
     const instance = new VaultArchivePlugin();
     await instance.onload();
     assert.deepEqual(registeredCommands, [
+      "full-backup",
       "backup",
       "push",
       "pull",
-      "full-backup",
       "restore",
       "configure-backup",
     ]);
