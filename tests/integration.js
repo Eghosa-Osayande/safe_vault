@@ -2,16 +2,51 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { BackupCommand, PullCommand, PushCommand, RestoreCommand } = require("../.test-dist/src/commands.js");
-const { DefaultConfigFactory } = require("../.test-dist/src/config.js");
-const { DEFAULT_SETTINGS } = require("../.test-dist/src/domain.js");
-const { GitBackupRepository, NodeFileSystem, NodeProcessRunner } = require("../.test-dist/src/node-adapters.js");
-const {
-  DefaultEncryptionStrategyFactory,
-  DefaultNamingStrategyFactory,
-  DefaultRemoteStrategyFactory,
-  TarArchiveStrategyFactory,
-} = require("../.test-dist/src/strategies.js");
+const { BackupCommand, PullCommand, PushCommand, RestoreCommand } = require("../.test-dist/src/commands/index.js");
+const { DefaultConfigFactory } = require("../.test-dist/src/configs/index.js");
+const { DEFAULT_SETTINGS } = require("../.test-dist/src/domain/config/index.js");
+const { NodeFile, NodeFileSystem } = require("../.test-dist/src/adapters/node_file_system/index.js");
+const { NodeProcessRunner } = require("../.test-dist/src/adapters/node_process_runner/index.js");
+const { TarArchiveStrategyFactory } = require("../.test-dist/src/strategies/index.js");
+
+async function testNodeFileSystemAndArchive(root) {
+  const fileSystem = new NodeFileSystem();
+  assert.equal(fileSystem.joinPath(root, "folder", "file.txt"), path.join(root, "folder", "file.txt"));
+  assert.equal(fileSystem.resolvePath(root, "folder", "..", "file.txt"), path.resolve(root, "file.txt"));
+  assert.equal(fileSystem.relativePath(root, path.join(root, "folder", "file.txt")), path.join("folder", "file.txt"));
+  assert.equal(fileSystem.baseName(path.join(root, "folder", "file.txt")), "file.txt");
+  assert.equal(fileSystem.parentPath(path.join(root, "folder", "file.txt")), path.join(root, "folder"));
+  assert.equal(fileSystem.isAbsolutePath(root), true);
+  assert.equal(fileSystem.isAbsolutePath("folder/file.txt"), false);
+
+  const firstTemporaryFile = fileSystem.temporaryFile(".tar.gz");
+  const secondTemporaryFile = fileSystem.temporaryFile(".tar.gz");
+  assert.ok(firstTemporaryFile instanceof NodeFile);
+  assert.equal(firstTemporaryFile.path.endsWith(".tar.gz"), true);
+  assert.notEqual(firstTemporaryFile.path, secondTemporaryFile.path);
+  assert.equal(await fileSystem.exists(firstTemporaryFile.path), false);
+  assert.equal(await fileSystem.exists(secondTemporaryFile.path), false);
+
+  const sourcePath = fileSystem.joinPath(root, "archive-source");
+  const destinationPath = fileSystem.joinPath(root, "archive-restored");
+  await fileSystem.ensureFolder(sourcePath);
+  await fileSystem.ensureFolder(destinationPath);
+  fs.writeFileSync(fileSystem.joinPath(sourcePath, "content.txt"), "archive content");
+  const archiveStrategy = new TarArchiveStrategyFactory(new NodeProcessRunner(), fileSystem).create();
+  try {
+    const archive = await archiveStrategy.createArchive(fileSystem.folder(sourcePath), firstTemporaryFile.path, []);
+    assert.ok(archive instanceof NodeFile);
+    assert.ok((await archive.read()).byteLength > 0);
+    await archiveStrategy.restoreArchive(archive, fileSystem.folder(destinationPath));
+    assert.equal(
+      fs.readFileSync(fileSystem.joinPath(destinationPath, "archive-source", "content.txt"), "utf8"),
+      "archive content",
+    );
+  } finally {
+    await fileSystem.remove(firstTemporaryFile.path);
+    await fileSystem.remove(secondTemporaryFile.path);
+  }
+}
 
 async function createContext(root, overrides, chooseRestore = async () => null) {
   const vault = path.join(root, "vault");
@@ -33,6 +68,11 @@ async function createContext(root, overrides, chooseRestore = async () => null) 
     configure: async () => null,
     notice: () => {},
   };
+  const platformBridge = {
+    getFileSystem: () => fileSystem,
+    getProcessRunner: () => runner,
+    getUserInteraction: () => ui,
+  };
   const settings = {
     ...DEFAULT_SETTINGS,
     vaultDirectory: vault,
@@ -42,13 +82,7 @@ async function createContext(root, overrides, chooseRestore = async () => null) 
   };
   const configFactory = new DefaultConfigFactory(
     vault,
-    fileSystem,
-    runner,
-    ui,
-    new DefaultNamingStrategyFactory(),
-    new DefaultEncryptionStrategyFactory(),
-    new DefaultRemoteStrategyFactory(),
-    new TarArchiveStrategyFactory(),
+    platformBridge,
   );
   return {
     vault,
@@ -57,9 +91,6 @@ async function createContext(root, overrides, chooseRestore = async () => null) 
     runner,
     context: {
       config: configFactory.create(settings),
-      fileSystem,
-      repository: new GitBackupRepository(runner),
-      ui,
       saveSettings: async () => {},
     },
   };
@@ -129,7 +160,9 @@ async function testAgeBackupRestore(root) {
   try {
     const plainRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vault-archive-plain-"));
     const ageRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vault-archive-age-"));
-    roots.push(plainRoot, ageRoot);
+    const fileSystemRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vault-archive-filesystem-"));
+    roots.push(plainRoot, ageRoot, fileSystemRoot);
+    await testNodeFileSystemAndArchive(fileSystemRoot);
     await testPlainBackupRestoreAndRemote(plainRoot);
     await testAgeBackupRestore(ageRoot);
     process.stdout.write("Vault Archive integration tests passed\n");
