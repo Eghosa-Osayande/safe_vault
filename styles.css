@@ -1,10 +1,5 @@
-.modal:has(.vault-archive-config-intro) {
+.modal:has(.vault-archive-config-actions) {
   width: min(680px, calc(100vw - 32px));
-}
-
-.vault-archive-config-intro {
-  color: var(--text-muted);
-  margin-bottom: 1.5rem;
 }
 
 .vault-archive-config-heading {
@@ -17,8 +12,23 @@
   margin-top: 0.75rem;
 }
 
-.vault-archive-config-intro ~ .setting-item textarea {
+.modal:has(.vault-archive-config-actions) textarea {
   min-height: 7rem;
   resize: vertical;
   width: min(30rem, 100%);
+}
+
+.vault-archive-config-actions {
+  background: var(--background-primary);
+  border-top: 1px solid var(--background-modifier-border);
+  bottom: 0;
+  margin: 1.5rem -1rem -1rem;
+  padding: 0.5rem 1rem;
+  position: sticky;
+  z-index: 10;
+}
+
+.vault-archive-config-actions .setting-item {
+  border-top: 0;
+  padding: 0;
 }

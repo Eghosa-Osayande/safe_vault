@@ -204,9 +204,11 @@ async function testSettingsAndAgeUtilities(root) {
   const normalized = normalizeBackupSettings({
     remoteStrategy: "git",
     versionControlStrategy: "none",
+    encryptionStrategy: "password",
     unknownSetting: "discarded",
   });
   assert.equal(normalized.versionControlStrategy, "git");
+  assert.equal(normalized.encryptionStrategy, "password");
   assert.equal(Object.hasOwn(normalized, "unknownSetting"), false);
 
   const fileSystem = new NodeFileSystem();

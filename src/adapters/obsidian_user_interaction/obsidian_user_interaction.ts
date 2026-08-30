@@ -157,14 +157,10 @@ class ConfigurationModal extends Modal {
     this.render();
   }
 
-  private render(): void {
+  private render(preserveScroll = false): void {
+    const scrollTop = preserveScroll ? this.contentEl.scrollTop : 0;
     this.contentEl.empty();
     this.titleEl.setText("Configure plugin");
-    // this.contentEl.createEl("p", {
-    //   text: "Configure where backups are stored and how they are archived, protected, and synchronized.",
-    //   cls: "vault-archive-config-intro",
-    // });
-    this.actions();
 
     this.heading("Directories");
 
@@ -195,7 +191,7 @@ class ConfigurationModal extends Modal {
       .setValue(namingKind)
       .onChange((value) => {
         this.draft.namingStrategy = value === "same" ? "same-overwrite" : value as BackupSettings["namingStrategy"];
-        this.render();
+        this.render(true);
       }));
     if (this.draft.namingStrategy.startsWith("same-")) {
       this.text("Archive name", "vault-backup", this.draft.sameArchiveName, (value) => {
@@ -217,7 +213,7 @@ class ConfigurationModal extends Modal {
     this.heading("Encryption");
     this.toggle("Encrypt backups", this.draft.encryptionStrategy !== "none", (enabled) => {
       this.draft.encryptionStrategy = enabled ? "age" : "none";
-      this.render();
+      this.render(true);
     });
     if (this.draft.encryptionStrategy !== "none") {
       new Setting(this.contentEl).setName("Encryption strategy").addDropdown((dropdown) => dropdown
@@ -226,7 +222,7 @@ class ConfigurationModal extends Modal {
         .setValue(this.draft.encryptionStrategy)
         .onChange((value) => {
           this.draft.encryptionStrategy = value as BackupSettings["encryptionStrategy"];
-          this.render();
+          this.render(true);
         }));
       if (this.draft.encryptionStrategy === "age") {
         new Setting(this.contentEl)
@@ -255,7 +251,7 @@ class ConfigurationModal extends Modal {
     this.toggle("Enable version control", this.draft.versionControlStrategy !== "none", (enabled) => {
       this.draft.versionControlStrategy = enabled ? "git" : "none";
       if (!enabled) this.draft.remoteStrategy = "none";
-      this.render();
+      this.render(true);
     });
     if (this.draft.versionControlStrategy !== "none") {
       new Setting(this.contentEl).setName("Version control strategy").addDropdown((dropdown) => dropdown
@@ -271,7 +267,7 @@ class ConfigurationModal extends Modal {
       .onChange((value) => {
         this.draft.remoteStrategy = value as BackupSettings["remoteStrategy"];
         if (value === "git") this.draft.versionControlStrategy = "git";
-        this.render();
+        this.render(true);
       }));
     if (this.draft.remoteStrategy === "git") {
       this.text("Pull URL", "git@example.com:owner/backups.git", this.draft.remotePullUrl, (value) => {
@@ -283,6 +279,7 @@ class ConfigurationModal extends Modal {
     }
 
     this.actions();
+    if (preserveScroll) this.contentEl.scrollTop = scrollTop;
   }
 
   private heading(title: string): void {
@@ -290,7 +287,8 @@ class ConfigurationModal extends Modal {
   }
 
   private actions(): void {
-    new Setting(this.contentEl)
+    const actionBar = this.contentEl.createEl("div", { cls: "vault-archive-config-actions" });
+    new Setting(actionBar)
       .addButton((button) => button.setButtonText("Cancel").onClick(() => this.close()))
       .addButton((button) => button.setButtonText("Save configuration").setCta().onClick(() => this.save()));
   }
@@ -353,7 +351,7 @@ class ConfigurationModal extends Modal {
       this.draft.ageIdentityPath = generated.identityPath;
       this.draft.ageRecipientPath = generated.recipientPath;
       this.draft.ageRecipient = generated.recipient;
-      this.render();
+      this.render(true);
       new Notice("Age identity and recipient files created.", 5000);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
