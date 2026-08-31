@@ -3,6 +3,7 @@ declare module "obsidian" {
     empty(): void;
     setText(text: string): void;
     createEl(tag: string, options?: { text?: string; cls?: string }): ObsidianElement;
+    createDiv(options?: { text?: string; cls?: string }): ObsidianElement;
   }
   export interface DataAdapter { basePath?: string; }
   export interface Vault { adapter: DataAdapter; configDir: string; }

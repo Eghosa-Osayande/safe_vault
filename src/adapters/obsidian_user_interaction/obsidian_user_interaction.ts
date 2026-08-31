@@ -309,7 +309,7 @@ class ConfigurationModal extends Modal {
   }
 
   private actions(): void {
-    const actionBar = this.contentEl.createEl("div", { cls: "vault-archive-config-actions" });
+    const actionBar = this.contentEl.createDiv({ cls: "vault-archive-config-actions" });
     new Setting(actionBar)
       .addButton((button) => button.setButtonText("Cancel").onClick(() => this.close()))
       .addButton((button) => button.setButtonText("Save configuration").setCta().onClick(() => this.save()));
