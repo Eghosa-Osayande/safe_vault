@@ -1,8 +1,7 @@
+import { promises as fs } from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import type { FileProxy, FileSystem, FileSystemEntity, FolderProxy } from "../../domain/file_system";
-
-const fs = require("node:fs") as any;
-const os = require("node:os") as { tmpdir(): string };
-const path = require("node:path") as any;
 
 let temporaryFileSequence = 0;
 
@@ -10,11 +9,11 @@ export class NodeFile implements FileProxy {
   constructor(public readonly path: string) {}
 
   async read(): Promise<Uint8Array> {
-    return fs.promises.readFile(this.path);
+    return fs.readFile(this.path);
   }
 
   async write(contents: string | Uint8Array): Promise<void> {
-    await fs.promises.writeFile(this.path, contents);
+    await fs.writeFile(this.path, contents);
   }
 }
 
@@ -22,8 +21,8 @@ export class NodeFolder implements FolderProxy {
   constructor(public readonly path: string) {}
 
   async getContents(): Promise<Iterable<FileSystemEntity>> {
-    const entries = await fs.promises.readdir(this.path, { withFileTypes: true });
-    return entries.map((entry: any) => {
+    const entries = await fs.readdir(this.path, { withFileTypes: true });
+    return entries.map((entry) => {
       const entryPath = path.join(this.path, entry.name);
       return entry.isDirectory() ? new NodeFolder(entryPath) : new NodeFile(entryPath);
     });
@@ -49,7 +48,7 @@ export class NodeFileSystem implements FileSystem {
 
   async exists(entityPath: string): Promise<boolean> {
     try {
-      await fs.promises.access(entityPath);
+      await fs.access(entityPath);
       return true;
     } catch {
       return false;
@@ -57,31 +56,31 @@ export class NodeFileSystem implements FileSystem {
   }
 
   async ensureFolder(folderPath: string): Promise<void> {
-    await fs.promises.mkdir(folderPath, { recursive: true });
+    await fs.mkdir(folderPath, { recursive: true });
   }
 
   async listFiles(folderPath: string): Promise<FileProxy[]> {
-    const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
+    const entries = await fs.readdir(folderPath, { withFileTypes: true });
     return entries
-      .filter((entry: any) => entry.isFile())
-      .map((entry: any) => new NodeFile(path.join(folderPath, entry.name)));
+      .filter((entry) => entry.isFile())
+      .map((entry) => new NodeFile(path.join(folderPath, entry.name)));
   }
 
   async copy(source: string, destination: string): Promise<void> {
-    await fs.promises.copyFile(source, destination);
+    await fs.copyFile(source, destination);
   }
 
   async move(source: string, destination: string): Promise<void> {
     try {
-      await fs.promises.rename(source, destination);
+      await fs.rename(source, destination);
     } catch (error) {
       if ((error as { code?: string }).code !== "EXDEV") throw error;
-      await fs.promises.copyFile(source, destination);
-      await fs.promises.unlink(source);
+      await fs.copyFile(source, destination);
+      await fs.unlink(source);
     }
   }
 
   async remove(entityPath: string): Promise<void> {
-    await fs.promises.rm(entityPath, { force: true });
+    await fs.rm(entityPath, { force: true });
   }
 }

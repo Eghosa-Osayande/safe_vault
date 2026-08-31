@@ -11,6 +11,7 @@
     "test": "npm run build && npm run build:test && node tests/integration.js && node tests/user-interaction.js && node tests/plugin-bootstrap.js"
   },
   "devDependencies": {
+    "@types/node": "^18.19.130",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.3"
   }

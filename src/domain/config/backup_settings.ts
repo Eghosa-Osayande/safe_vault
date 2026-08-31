@@ -85,7 +85,7 @@ export function normalizeExcludedVaultPaths(paths: Iterable<string>): string[] {
     if (!path) continue;
     if (path.startsWith("/") || /^[A-Za-z]:\//.test(path)) throw new Error(`Excluded path must be relative: ${input}`);
     if (path.split("/").includes("..")) throw new Error(`Excluded path cannot traverse outside the vault: ${input}`);
-    if (/[*?\[\]{}]/.test(path)) throw new Error(`Excluded path cannot contain wildcards: ${input}`);
+    if (/[*?[\]{}]/.test(path)) throw new Error(`Excluded path cannot contain wildcards: ${input}`);
     if (!normalized.includes(path)) normalized.push(path);
   }
   return normalized;

@@ -155,6 +155,7 @@ class ConfigurationModal extends Modal {
   }
 
   onOpen(): void {
+    this.modalEl.classList.add("vault-archive-config-modal");
     this.render();
   }
 
@@ -177,7 +178,7 @@ class ConfigurationModal extends Modal {
       .setName("Excluded paths")
       .setDesc("One exact vault-relative path per line. End folders with /. Wildcards are not supported.")
       .addTextArea((text) => text
-        .setPlaceholder(".git/\n.obsidian/workspace.json")
+        .setPlaceholder(`.git/\n${this.app.vault.configDir}/workspace.json`)
         .setValue(this.draft.excludedVaultPaths.join("\n"))
         .onChange((value) => {
           this.draft.excludedVaultPaths = value.split(/\r?\n/);

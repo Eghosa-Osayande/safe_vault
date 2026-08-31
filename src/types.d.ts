@@ -5,7 +5,7 @@ declare module "obsidian" {
     createEl(tag: string, options?: { text?: string; cls?: string }): ObsidianElement;
   }
   export interface DataAdapter { basePath?: string; }
-  export interface Vault { adapter: DataAdapter; }
+  export interface Vault { adapter: DataAdapter; configDir: string; }
   export class App { vault: Vault; }
   export class Plugin {
     app: App;
@@ -15,7 +15,7 @@ declare module "obsidian" {
     saveData(data: unknown): Promise<void>;
   }
   export class Modal {
-    app: App; contentEl: ObsidianElement; titleEl: ObsidianElement;
+    app: App; contentEl: ObsidianElement; titleEl: ObsidianElement; modalEl: HTMLElement;
     constructor(app: App); open(): void; close(): void; onOpen(): void; onClose(): void;
   }
   export class Notice { constructor(message: string, timeout?: number); }
@@ -43,8 +43,3 @@ declare module "electron" {
   }
   export const remote: { dialog: Dialog };
 }
-declare function require(name: string): any;
-
-declare const process: {
-  env: Record<string, string | undefined>
-};
